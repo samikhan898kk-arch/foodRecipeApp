@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:6.0
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - appnet
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    depends_on:
+      - mongo
+    env_file:
+      - ./backend/.env
+    environment:
+      # override CONN string from .env to point at the mongo service
+      - CONNECTION_STRING=mongodb://mongo:27017/?directConnection=true&serverSelectionTimeoutMS=2000
+    ports:
+      - "5000:5000"
+    networks:
+      - appnet
+
+  frontend:
+    build:
+      context: ./frontend/food-blog-app
+      dockerfile: dockerfile
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
+    networks:
+      - appnet
+
+networks:
+  appnet:
+
+volumes:
+  mongo_data:
